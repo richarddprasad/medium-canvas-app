@@ -1,24 +1,131 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import * as React from 'react';
+
+type Coordinates = {
+  x: number;
+  y: number;
+};
 
 function App() {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [context, setContext] = React.useState<CanvasRenderingContext2D | null>(null);
+
+  React.useEffect(() => {
+    let mouseDown: boolean = false;
+    let start: Coordinates = { x: 0, y: 0 };
+    let end: Coordinates = { x: 0, y: 0 };
+    let canvasOffsetLeft: number = 0;
+    let canvasOffsetTop: number = 0;
+
+    function handleMouseDown(evt: MouseEvent) {
+      mouseDown = true;
+
+      start = {
+        x: evt.clientX - canvasOffsetLeft,
+        y: evt.clientY - canvasOffsetTop,
+      };
+
+      end = {
+        x: evt.clientX - canvasOffsetLeft,
+        y: evt.clientY - canvasOffsetTop,
+      };
+    }
+
+    function handleMouseUp(evt: MouseEvent) {
+      mouseDown = false;
+    }
+
+    function handleMouseMove(evt: MouseEvent) {
+      if (mouseDown && context) {
+        start = {
+          x: end.x,
+          y: end.y,
+        };
+
+        end = {
+          x: evt.clientX - canvasOffsetLeft,
+          y: evt.clientY - canvasOffsetTop,
+        };
+
+        // Draw our path
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        context.lineTo(end.x, end.y);
+        context.strokeStyle = `#${randomColor()}`;
+        context.lineWidth = 3;
+        context.stroke();
+        context.closePath();
+      }
+    }
+
+    function randomColor(): string {
+      const color = new Array<string>(6);
+
+      for (let i = 0; i < 6; i++) {
+        const val = Math.floor(Math.random() * 16);
+
+        if (val < 10) {
+          color[i] = val.toString();
+        } else {
+          color[i] = String.fromCharCode(val + 87);
+        }
+      }
+
+      return color.join('');
+    }
+
+    if (canvasRef.current) {
+      const renderCtx = canvasRef.current.getContext('2d');
+
+      if (renderCtx) {
+        canvasRef.current.addEventListener('mousedown', handleMouseDown);
+        canvasRef.current.addEventListener('mouseup', handleMouseUp);
+        canvasRef.current.addEventListener('mousemove', handleMouseMove);
+
+        canvasOffsetLeft = canvasRef.current.offsetLeft;
+        canvasOffsetTop = canvasRef.current.offsetTop;
+
+        setContext(renderCtx);
+      }
+    }
+
+    // Draw a rectangle
+    if (context) context.fillRect(5, 5, 100, 100);
+
+    // Draw a circle
+    if (context) {
+      context.beginPath();
+      context.fillStyle = '#ff7f50';
+      context.arc(440, 60, 50, 0, Math.PI * 2, true);
+      context.fill();
+      context.fillStyle = '#000';
+      context.closePath();
+    }
+
+    return function cleanup() {
+      if (canvasRef.current) {
+        canvasRef.current.removeEventListener('mousedown', handleMouseDown);
+        canvasRef.current.removeEventListener('mouseup', handleMouseUp);
+        canvasRef.current.removeEventListener('mousemove', handleMouseMove);
+      }
+    }
+  }, [context]);
+
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div
+      style={{
+        textAlign: 'center',
+      }}>
+      <canvas
+        id="canvas"
+        ref={canvasRef}
+        width={500}
+        height={500}
+        style={{
+          border: '2px solid #000',
+          marginTop: 10,
+        }}
+      ></canvas>
     </div>
   );
 }
